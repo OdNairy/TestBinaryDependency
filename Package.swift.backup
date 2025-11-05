@@ -17,8 +17,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "TestLibrary",
-            url: "https://github.com/OdNairy/TestBinaryDependency/releases/download/1.0.2/TestLibrary-v1.0.2.xcframework.zip",
-            checksum: "1f8ab52250f5c9b36058354215e577c8d6be1af6d50ac119245170ca4e7c5ad6"
+            url: "https://github.com/OdNairy/TestBinaryDependency/releases/download/1.0.3/TestLibrary-v1.0.3.xcframework.zip",
+            checksum: "f70b5face59ee225a4a10c0cccdd5548026d46b96b39463850fdf49f661b39b7"
         )
     ]
 )
