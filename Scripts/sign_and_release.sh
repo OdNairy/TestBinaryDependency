@@ -135,7 +135,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "TestLibrary",
-            url: "https://github.com/${GITHUB_USER}/${REPO_NAME}/releases/download/v${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip",
+            url: "https://github.com/${GITHUB_USER}/${REPO_NAME}/releases/download/${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip",
             checksum: "$CHECKSUM"
         )
     ]
@@ -159,8 +159,8 @@ git commit -m "Release v${VERSION} - ${DESCRIPTION}" || {
     print_info "Nothing to commit"
 }
 
-# Create tag
-git tag -a "v${VERSION}" -m "Version ${VERSION} - ${DESCRIPTION}" --force
+# Create tag (without v prefix)
+git tag -a "${VERSION}" -m "Version ${VERSION} - ${DESCRIPTION}" --force
 
 # Push to remote
 print_step "Pushing to GitHub..."
@@ -169,15 +169,15 @@ git push origin main --force 2>/dev/null || {
     git branch -M main
     git push -u origin main
 }
-git push origin "v${VERSION}" --force
+git push origin "${VERSION}" --force
 print_success "Pushed to GitHub"
 
-# Step 7: Create GitHub release
+# Step 7: Create GitHub release (without v prefix)
 print_step "Creating GitHub release..."
-gh release create "v${VERSION}" \
-  --title "v${VERSION} - ${DESCRIPTION}" \
+gh release create "${VERSION}" \
+  --title "${VERSION} - ${DESCRIPTION}" \
   --notes "$(cat <<EOF
-## Release v${VERSION}
+## Release ${VERSION}
 
 ${DESCRIPTION}
 
@@ -201,10 +201,10 @@ EOF
   "$ZIP_PATH" \
   --repo "${GITHUB_USER}/${REPO_NAME}" || {
     print_info "Release already exists, updating..."
-    gh release delete "v${VERSION}" --yes --repo "${GITHUB_USER}/${REPO_NAME}"
-    gh release create "v${VERSION}" \
-      --title "v${VERSION} - ${DESCRIPTION}" \
-      --notes "Release v${VERSION} - ${DESCRIPTION}" \
+    gh release delete "${VERSION}" --yes --repo "${GITHUB_USER}/${REPO_NAME}"
+    gh release create "${VERSION}" \
+      --title "${VERSION} - ${DESCRIPTION}" \
+      --notes "Release ${VERSION} - ${DESCRIPTION}" \
       "$ZIP_PATH" \
       --repo "${GITHUB_USER}/${REPO_NAME}"
 }
@@ -214,14 +214,14 @@ print_success "GitHub release created"
 # Step 8: Display summary
 echo ""
 echo "========================================="
-echo "Release v${VERSION} completed successfully!"
+echo "Release ${VERSION} completed successfully!"
 echo "========================================="
 echo ""
 echo "Release URL:"
-echo "  ${REPO_URL}/releases/tag/v${VERSION}"
+echo "  ${REPO_URL}/releases/tag/${VERSION}"
 echo ""
 echo "Download URL:"
-echo "  ${REPO_URL}/releases/download/v${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
+echo "  ${REPO_URL}/releases/download/${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
 echo ""
 echo "Checksum:"
 echo "  $CHECKSUM"
