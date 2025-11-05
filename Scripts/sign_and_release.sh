@@ -26,11 +26,15 @@ print_step() { echo -e "${BLUE}→${NC} $1"; }
 
 # Check arguments
 if [ $# -lt 3 ]; then
-    echo "Usage: $0 <version> <cert_identity> <description>"
+    echo "Usage: $0 <version> <cert_identity> <description> [--no-version]"
     echo ""
     echo "Examples:"
     echo "  $0 1.0.0 \"884983514A...\" \"Apple Distribution signature\""
     echo "  $0 1.0.1 \"SELF_SIGNED_ID\" \"Self-signed certificate\""
+    echo "  $0 2.0.0 \"SELF_SIGNED_ID\" \"Self-signed certificate\" --no-version"
+    echo ""
+    echo "Options:"
+    echo "  --no-version    Don't include version in XCFramework filename"
     echo ""
     echo "Available certificate IDs from config:"
     echo "  Apple: $APPLE_CERT_ID"
@@ -41,6 +45,7 @@ fi
 VERSION="$1"
 CERT_ID="$2"
 DESCRIPTION="$3"
+NO_VERSION_IN_FILENAME="${4:-}"
 
 # Replace placeholder with actual certificate ID if needed
 if [ "$CERT_ID" == "APPLE" ]; then
@@ -59,8 +64,17 @@ echo ""
 # Paths
 BUILD_DIR="$PROJECT_ROOT/build"
 XCFRAMEWORK_PATH="$BUILD_DIR/${FRAMEWORK_NAME}.xcframework"
-VERSIONED_PATH="$BUILD_DIR/${FRAMEWORK_NAME}-v${VERSION}.xcframework"
-ZIP_PATH="$BUILD_DIR/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
+
+# Determine paths based on versioning flag
+if [ "$NO_VERSION_IN_FILENAME" == "--no-version" ]; then
+    VERSIONED_PATH="$BUILD_DIR/${FRAMEWORK_NAME}.xcframework"
+    ZIP_PATH="$BUILD_DIR/${FRAMEWORK_NAME}.xcframework.zip"
+    ZIP_FILENAME="${FRAMEWORK_NAME}.xcframework.zip"
+else
+    VERSIONED_PATH="$BUILD_DIR/${FRAMEWORK_NAME}-v${VERSION}.xcframework"
+    ZIP_PATH="$BUILD_DIR/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
+    ZIP_FILENAME="${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
+fi
 
 # Check if XCFramework exists
 if [ ! -d "$XCFRAMEWORK_PATH" ]; then
@@ -69,11 +83,16 @@ if [ ! -d "$XCFRAMEWORK_PATH" ]; then
     exit 1
 fi
 
-# Step 1: Copy XCFramework to versioned path
-print_step "Copying XCFramework to versioned path..."
-rm -rf "$VERSIONED_PATH"
-cp -R "$XCFRAMEWORK_PATH" "$VERSIONED_PATH"
-print_success "Copied to: $VERSIONED_PATH"
+# Step 1: Copy XCFramework to versioned/target path
+if [ "$NO_VERSION_IN_FILENAME" == "--no-version" ]; then
+    print_step "Using XCFramework without version in filename..."
+    # No need to copy, just use the original path
+else
+    print_step "Copying XCFramework to versioned path..."
+    rm -rf "$VERSIONED_PATH"
+    cp -R "$XCFRAMEWORK_PATH" "$VERSIONED_PATH"
+    print_success "Copied to: $VERSIONED_PATH"
+fi
 
 # Step 2: Sign the XCFramework itself
 print_step "Signing XCFramework..."
@@ -129,7 +148,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "TestLibrary",
-            url: "https://github.com/${GITHUB_USER}/${REPO_NAME}/releases/download/${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip",
+            url: "https://github.com/${GITHUB_USER}/${REPO_NAME}/releases/download/${VERSION}/${ZIP_FILENAME}",
             checksum: "$CHECKSUM"
         )
     ]
@@ -189,7 +208,7 @@ dependencies: [
 \`\`\`
 
 ### Files
-- 📦 XCFramework: ${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip
+- 📦 XCFramework: ${ZIP_FILENAME}
 EOF
 )" \
   "$ZIP_PATH" \
@@ -215,7 +234,7 @@ echo "Release URL:"
 echo "  ${REPO_URL}/releases/tag/${VERSION}"
 echo ""
 echo "Download URL:"
-echo "  ${REPO_URL}/releases/download/${VERSION}/${FRAMEWORK_NAME}-v${VERSION}.xcframework.zip"
+echo "  ${REPO_URL}/releases/download/${VERSION}/${ZIP_FILENAME}"
 echo ""
 echo "Checksum:"
 echo "  $CHECKSUM"
