@@ -75,23 +75,17 @@ rm -rf "$VERSIONED_PATH"
 cp -R "$XCFRAMEWORK_PATH" "$VERSIONED_PATH"
 print_success "Copied to: $VERSIONED_PATH"
 
-# Step 2: Sign all frameworks within the XCFramework
-print_step "Signing frameworks..."
-find "$VERSIONED_PATH" -name "*.framework" -type d | while read framework; do
-    echo "  Signing: $(basename "$framework")"
+# Step 2: Sign the XCFramework itself
+print_step "Signing XCFramework..."
+codesign --force --sign "$CERT_ID" --timestamp "$VERSIONED_PATH" 2>&1 | grep -E "replacing|signed" || true
 
-    # Sign the framework
-    codesign --force --sign "$CERT_ID" --timestamp "$framework" 2>&1 | grep -E "replacing|signed" || true
-
-    # Verify signature
-    if codesign -dv "$framework" 2>&1 | grep -q "Identifier"; then
-        echo "    ✓ Signed successfully"
-    else
-        print_error "Failed to sign $framework"
-        exit 1
-    fi
-done
-print_success "All frameworks signed"
+# Verify signature
+if codesign -dv "$VERSIONED_PATH" 2>&1 | grep -q "Format=bundle"; then
+    print_success "XCFramework signed successfully"
+else
+    print_error "Failed to sign XCFramework"
+    exit 1
+fi
 
 # Step 3: Create ZIP archive
 print_step "Creating ZIP archive..."
